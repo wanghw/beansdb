@@ -13,30 +13,7 @@
  *
  */
 
-#include "beansdb.h"
-#include <stdio.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <assert.h>
-
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
-
-#include <pthread.h>
-
-typedef struct EventLoop {
-//    int   maxfd;
-    conn* conns[AE_SETSIZE];
-    int   fired[AE_SETSIZE];
-    int   nready;
-    void *apidata;
-} EventLoop;
+#include "thread.h"
 
 /* Lock for connection freelist */
 static pthread_mutex_t conn_lock;
@@ -99,26 +76,6 @@ int mt_item_add_to_freelist(item *it){
 
     return result;
 }
-
-/******************************* GLOBAL STATS ******************************/
-
-void mt_stats_lock() {
-}
-
-void mt_stats_unlock() {
-}
-
-/* Include the best multiplexing layer supported by this system.
- * The following should be ordered by performances, descending. */
-#ifdef HAVE_EPOLL
-#include "ae_epoll.c"
-#else
-    #ifdef HAVE_KQUEUE
-    #include "ae_kqueue.c"
-    #else
-    #include "ae_select.c"
-    #endif
-#endif
 
 /*
  * Initializes the thread subsystem, creating various worker threads.

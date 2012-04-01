@@ -13,6 +13,9 @@
  *
  */
  
+#ifndef __BEANSDB__
+#define __BEANSDB__
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -263,3 +266,5 @@ void  mt_stats_unlock(void);
 # define STATS_UNLOCK()              mt_stats_unlock()
 
 extern int daemon_quit;
+
+#endif

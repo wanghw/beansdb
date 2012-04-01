@@ -388,7 +388,7 @@ HTree* optimizeDataFile(HTree* tree, int bucket, const char* path, const char* h
     }
 
     MFile *f = open_mfile(path);
-    if (f == NULL) return;
+    if (f == NULL) return NULL;
     
     char tmp[255];
     sprintf(tmp, "%s.tmp", path);

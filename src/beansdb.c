@@ -15,6 +15,7 @@
 
 #include "beansdb.h"
 #include "hstore.h"
+#include "thread.h"
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -82,7 +83,7 @@ static void settings_init(void);
 static void conn_close(conn *c);
 static void conn_init(void);
 static void accept_new_conns(const bool do_accept);
-static bool update_event(conn *c, const int new_flags);
+static bool update_flag(conn *c, const int new_flags);
 static void complete_nread(conn *c);
 static void process_command(conn *c, char *command);
 static int transmit(conn *c);
@@ -293,7 +294,7 @@ conn *conn_new(const int sfd, const int init_state, const int read_buffer_size) 
     c->item = 0;
     c->noreply = false;
     
-    update_event(c, AE_READABLE);
+    update_flag(c, AE_READABLE);
     if (add_event(sfd, AE_READABLE, c) == -1) {
         if (conn_add_to_freelist(c)) {
             conn_free(c);
@@ -358,7 +359,7 @@ static void conn_close(conn *c) {
     delete_event(c->sfd);
     close(c->sfd);
     c->sfd = -1;
-    update_event(c, 0);
+    update_flag(c, 0);
     conn_cleanup(c);
 
     /* if the connection has big buffers, just free it */
@@ -1286,7 +1287,7 @@ static int try_read_network(conn *c) {
     return gotdata;
 }
 
-static bool update_event(conn *c, const int new_flags) {
+static bool update_flag(conn *c, const int new_flags) {
     c->ev_flags = new_flags;
     return true;
 }
@@ -1335,7 +1336,7 @@ static int transmit(conn *c) {
             return TRANSMIT_INCOMPLETE;
         }
         if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-            update_event(c, AE_WRITABLE);
+            update_flag(c, AE_WRITABLE);
             return TRANSMIT_SOFT_ERROR;
         }
         /* if res==0 or res==-1 and error is not EAGAIN or EWOULDBLOCK,
@@ -1409,7 +1410,7 @@ void drive_machine(conn *c) {
                 continue;
             }
             /* we have no command line and no data to read from network */
-            update_event(c, AE_READABLE);
+            update_flag(c, AE_READABLE);
             stop = true;
             break;
 
@@ -1445,7 +1446,7 @@ void drive_machine(conn *c) {
                 break;
             }
             if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-                update_event(c, AE_READABLE);
+                update_flag(c, AE_READABLE);
                 stop = true;
                 break;
             }
@@ -1485,7 +1486,7 @@ void drive_machine(conn *c) {
                 break;
             }
             if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-                update_event(c, AE_READABLE);
+                update_flag(c, AE_READABLE);
                 stop = true;
                 break;
             }
@@ -2077,4 +2078,10 @@ int main (int argc, char **argv) {
         remove_pidfile(pid_file);
 
     return 0;
+}
+
+void  mt_stats_lock(void) {
+}
+
+void  mt_stats_unlock(void) {
 }
